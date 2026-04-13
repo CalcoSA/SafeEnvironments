@@ -1,0 +1,10 @@
+.venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+private_storage/
+generated_pdfs/
+instance/
+.vscode/

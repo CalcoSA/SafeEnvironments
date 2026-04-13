@@ -1,0 +1,579 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Conductas de Acoso Sexual{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <div class="border rounded-4 p-4 mx-auto bg-white shadow-sm" style="max-width: 900px; background-color: #FFFEF9;">
+        <div class="form-header">
+            <p style="text-align: justify;">
+                En nuestra organización creemos en espacios seguros, respetuosos y libres de cualquier forma de violencia.
+            </p>
+            <p style="text-align: justify;">
+                Si has vivido o presenciado una situación de acoso sexual en el entorno laboral, este formulario activa nuestra ruta institucional de atención.
+            </p>
+            <p style="text-align: justify;">
+                La información será tratada con confidencialidad y no se permitirán represalias.
+                Este formulario no es anónimo, conforme a la política interna.
+            </p>
+        </div>
+    </div>
+    <div class="border rounded-4 mt-4 p-4 mx-auto shadow-sm" style="max-width: 900px; background-color: #FFFEF9;">
+        <form method="POST" action="{{ url_for('report.store') }}" enctype="multipart/form-data" class="report-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- SECCIÓN 1 -->
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3">INFORMACIÓN DE QUIEN REPORTA</h2>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="reporter_full_name" class="form-label">Nombre completo</label>
+                        <input type="text" class="form-control" id="reporter_full_name" name="reporter_full_name" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="reporter_document_number" class="form-label">Número de documento</label>
+                        <input type="text" class="form-control" id="reporter_document_number" name="reporter_document_number" inputmode="numeric" pattern="[0-9]{1,11}" maxlength="11" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="reporter_point_of_sale_area" class="form-label">Punto de venta / Área</label>
+                        <input type="text" class="form-control" id="reporter_point_of_sale_area" name="reporter_point_of_sale_area" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="reporter_current_position" class="form-label">Cargo actual</label>
+                        <input type="text" class="form-control" id="reporter_current_position" name="reporter_current_position" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="reporter_email" class="form-label">Correo electrónico</label>
+                        <input type="email" class="form-control" id="reporter_email" name="reporter_email" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="reporter_phone_number" class="form-label">Número de contacto</label>
+                        <input type="text" class="form-control" id="reporter_phone_number" name="reporter_phone_number" inputmode="numeric" pattern="[0-9]{1,11}" maxlength="11" required>
+                    </div>
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                            const numericFields = [
+                                document.getElementById("reporter_document_number"),
+                                document.getElementById("reporter_phone_number")
+                            ];
+                            numericFields.forEach(field => {
+                                field.addEventListener("input", function () {
+                                    this.value = this.value.replace(/\D/g, "").slice(0, 11);
+                                });
+                            });
+                        });
+                    </script>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 2 -->
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3">INFORMACIÓN DE LA PERSONA SEÑALADA</h2>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="involved_person_name" class="form-label">Nombre de la persona involucrada</label>
+                        <input type="text" class="form-control" id="involved_person_name" name="involved_person_name" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="involved_person_position" class="form-label">Cargo</label>
+                        <input type="text" class="form-control" id="involved_person_position" name="involved_person_position" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="involved_person_point_of_sale" class="form-label">Punto de venta / CDS</label>
+                        <input type="text" class="form-control" id="involved_person_point_of_sale" name="involved_person_point_of_sale" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="relationship_type" class="form-label">La persona señalada es su:</label>
+                            <select
+                                class="form-select"
+                                id="relationship_type"
+                                name="relationship_type"
+                                required
+                            >
+                                <option value="" selected disabled>Seleccione</option>
+                                <option value="Persona a cargo">Persona a cargo</option>
+                                <option value="Jefe/a directo/a">Jefe/a directo/a</option>
+                                <option value="Compañero/a">Compañero/a</option>
+                                <option value="Proveedor/a">Proveedor/a</option>
+                                <option value="Cliente">Cliente</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3 d-none" id="relationship_type_other_wrapper">
+                            <label for="relationship_type_other" class="form-label">Especifique la relación</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="relationship_type_other"
+                                name="relationship_type_other"
+                                placeholder="Escriba aquí el tipo de relación"
+                            >
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const select = document.getElementById("relationship_type");
+                    const otherWrapper = document.getElementById("relationship_type_other_wrapper");
+                    const otherInput = document.getElementById("relationship_type_other");
+
+                    function toggleRelationshipOther() {
+                        if (select.value === "Otro") {
+                            otherWrapper.classList.remove("d-none");
+                            otherInput.required = true;
+                            otherInput.focus();
+                        } else {
+                            otherWrapper.classList.add("d-none");
+                            otherInput.required = false;
+                            otherInput.value = "";
+                        }
+                    }
+
+                    select.addEventListener("change", toggleRelationshipOther);
+                    toggleRelationshipOther();
+                });
+            </script>
+
+            <!-- SECCIÓN 3 -->
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3">TIPO DE CONDUCTA</h2>
+
+                <div class="mb-3">
+                    <label class="form-label d-block">Tipo de conducta presentada (puede marcar varias):</label>
+
+                    {% for behavior in behaviors %}
+                        <div class="form-check">
+                            <input
+                                class="form-check-input behavior-checkbox"
+                                type="checkbox"
+                                name="behavior_ids"
+                                id="behavior_{{ behavior.id }}"
+                                value="{{ behavior.id }}"
+                            >
+                            <label class="form-check-label" for="behavior_{{ behavior.id }}">
+                                {{ behavior.name }}
+                            </label>
+                        </div>
+                    {% endfor %}
+
+                    <div id="behavior_error" class="text-danger mt-2 d-none">
+                        Debes seleccionar al menos un tipo de conducta.
+                    </div>
+                </div>
+            </section>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const form = document.querySelector(".report-form");
+                    const behaviorCheckboxes = document.querySelectorAll(".behavior-checkbox");
+                    const behaviorError = document.getElementById("behavior_error");
+
+                    function validateBehaviors() {
+                        const oneChecked = Array.from(behaviorCheckboxes).some(checkbox => checkbox.checked);
+
+                        if (oneChecked) {
+                            behaviorError.classList.add("d-none");
+                            return true;
+                        } else {
+                            behaviorError.classList.remove("d-none");
+                            return false;
+                        }
+                    }
+
+                    behaviorCheckboxes.forEach(checkbox => {
+                        checkbox.addEventListener("change", validateBehaviors);
+                    });
+
+                    form.addEventListener("submit", function (event) {
+                        if (!validateBehaviors()) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            behaviorCheckboxes[0].focus();
+                        }
+                    });
+                });
+            </script>
+
+            <!-- SECCIÓN 4 -->
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3">RELATO DE LOS HECHOS</h2>
+
+                <div class="mb-3">
+                    <label for="facts_description" class="form-label">
+                        Describe lo sucedido (qué ocurrió, cuándo, dónde, si hubo testigos).
+                    </label>
+                    <textarea
+                        class="form-control"
+                        id="facts_description"
+                        name="facts_description"
+                        rows="8"
+                        maxlength="1000"
+                        required
+                    ></textarea>
+                    <div class="form-text">
+                        No es necesario incluir detalles íntimos. Comparte lo que consideres relevante.
+                        <span id="facts_counter">0/1000</span>
+                    </div>
+                </div>
+            </section>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const textarea = document.getElementById("facts_description");
+                    const counter = document.getElementById("facts_counter");
+
+                    function updateCounter() {
+                        counter.textContent = `${textarea.value.length}/1000`;
+                    }
+
+                    textarea.addEventListener("input", updateCounter);
+                    updateCounter();
+                });
+            </script>
+
+            <!-- SECCIÓN 5 -->
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3">FRECUENCIA</h2>
+
+                <div class="mb-3">
+                    <label class="form-label d-block">La situación ocurrió:</label>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="occurrence_frequency"
+                            id="occurrence_once"
+                            value="Una sola vez"
+                            required
+                        >
+                        <label class="form-check-label" for="occurrence_once">
+                            Una sola vez
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="occurrence_frequency"
+                            id="occurrence_more_than_once"
+                            value="Más de una vez"
+                        >
+                        <label class="form-check-label" for="occurrence_more_than_once">
+                            Más de una vez
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="occurrence_frequency"
+                            id="occurrence_repeated"
+                            value="De manera reiterada"
+                        >
+                        <label class="form-check-label" for="occurrence_repeated">
+                            De manera reiterada
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 6 -->
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3">PRUEBAS</h2>
+
+                <div class="mb-3">
+                    <label class="form-label d-block">¿Cuentas con pruebas?</label>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="has_evidence"
+                            id="has_evidence_yes"
+                            value="Sí"
+                            required
+                        >
+                        <label class="form-check-label" for="has_evidence_yes">
+                            Sí
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="has_evidence"
+                            id="has_evidence_no"
+                            value="No"
+                        >
+                        <label class="form-check-label" for="has_evidence_no">
+                            No
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="has_evidence"
+                            id="has_evidence_investigate"
+                            value="No tengo pruebas pero deseo que se investigue"
+                        >
+                        <label class="form-check-label" for="has_evidence_investigate">
+                            No tengo pruebas pero deseo que se investigue
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-3 d-none" id="evidence_files_wrapper">
+                    <label for="evidence_files" class="form-label">Adjuntar archivos</label>
+                    <input
+                        class="form-control"
+                        type="file"
+                        id="evidence_files"
+                        name="evidence_files"
+                        multiple
+                    >
+                    <div class="form-text">Este campo es obligatorio si seleccionas “Sí”.</div>
+                </div>
+            </section>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const evidenceYes = document.getElementById("has_evidence_yes");
+                    const evidenceNo = document.getElementById("has_evidence_no");
+                    const evidenceInvestigate = document.getElementById("has_evidence_investigate");
+
+                    const evidenceWrapper = document.getElementById("evidence_files_wrapper");
+                    const evidenceInput = document.getElementById("evidence_files");
+
+                    function toggleEvidenceFileRequirement() {
+                        if (evidenceYes.checked) {
+                            evidenceWrapper.classList.remove("d-none");
+                            evidenceInput.required = true;
+                        } else {
+                            evidenceWrapper.classList.add("d-none");
+                            evidenceInput.required = false;
+                            evidenceInput.value = "";
+                        }
+                    }
+
+                    evidenceYes.addEventListener("change", toggleEvidenceFileRequirement);
+                    evidenceNo.addEventListener("change", toggleEvidenceFileRequirement);
+                    evidenceInvestigate.addEventListener("change", toggleEvidenceFileRequirement);
+
+                    toggleEvidenceFileRequirement();
+                });
+            </script>
+
+            <!-- SECCIÓN 7 -->
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3">IMPACTO</h2>
+
+                <div class="mb-3">
+                    <label class="form-label d-block">Esta situación ha afectado tu bienestar de qué manera:</label>
+
+                    {% for impact in impacts %}
+                        <div class="form-check">
+                            <input
+                                class="form-check-input impact-checkbox"
+                                type="checkbox"
+                                name="impact_ids"
+                                id="impact_{{ impact.id }}"
+                                value="{{ impact.id }}"
+                            >
+                            <label class="form-check-label" for="impact_{{ impact.id }}">
+                                {{ impact.name }}
+                            </label>
+                        </div>
+                    {% endfor %}
+
+                    <div id="impact_error" class="text-danger mt-2 d-none">
+                        Debes seleccionar al menos una opción de impacto.
+                    </div>
+                </div>
+            </section>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const form = document.querySelector(".report-form");
+                    const impactCheckboxes = document.querySelectorAll(".impact-checkbox");
+                    const impactError = document.getElementById("impact_error");
+
+                    function validateImpacts() {
+                        const oneChecked = Array.from(impactCheckboxes).some(checkbox => checkbox.checked);
+
+                        if (oneChecked) {
+                            impactError.classList.add("d-none");
+                            return true;
+                        } else {
+                            impactError.classList.remove("d-none");
+                            return false;
+                        }
+                    }
+
+                    impactCheckboxes.forEach(checkbox => {
+                        checkbox.addEventListener("change", validateImpacts);
+                    });
+
+                    form.addEventListener("submit", function (event) {
+                        if (!validateImpacts()) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            impactCheckboxes[0].focus();
+                        }
+                    });
+                });
+            </script>
+
+            <!-- SECCIÓN 8 -->
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3">SEGURIDAD ACTUAL</h2>
+
+                <div class="mb-3">
+                    <label class="form-label d-block">¿Te sientes en riesgo actualmente en el entorno laboral?</label>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="current_risk"
+                            id="current_risk_yes"
+                            value="Sí"
+                            required
+                        >
+                        <label class="form-check-label" for="current_risk_yes">
+                            Sí
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="current_risk"
+                            id="current_risk_no"
+                            value="No"
+                        >
+                        <label class="form-check-label" for="current_risk_no">
+                            No
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="current_risk"
+                            id="current_risk_unsure"
+                            value="No estoy segura"
+                        >
+                        <label class="form-check-label" for="current_risk_unsure">
+                            No estoy seguro/a
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 9 -->
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3">ACOMPAÑAMIENTO PSICOLÓGICO</h2>
+
+                <div class="mb-3">
+                    <label class="form-label d-block">¿Deseas recibir acompañamiento psicológico desde Vínculos?</label>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="psychological_support"
+                            id="psychological_support_priority"
+                            value="Sí, lo necesito de manera prioritaria"
+                            required
+                        >
+                        <label class="form-check-label" for="psychological_support_priority">
+                            Sí, lo necesito de manera prioritaria
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="psychological_support"
+                            id="psychological_support_orientation"
+                            value="Sí, me gustaría recibir orientación"
+                        >
+                        <label class="form-check-label" for="psychological_support_orientation">
+                            Sí, me gustaría recibir orientación
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="psychological_support"
+                            id="psychological_support_no"
+                            value="No por ahora"
+                        >
+                        <label class="form-check-label" for="psychological_support_no">
+                            No por ahora
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="psychological_support"
+                            id="psychological_support_info"
+                            value="Necesito más información sobre este apoyo"
+                        >
+                        <label class="form-check-label" for="psychological_support_info">
+                            Necesito más información sobre este apoyo
+                        </label>
+                    </div>
+
+                    <div class="form-text mt-2">
+                        En caso afirmativo, el equipo de Vínculos y Relaciones se pondrá en contacto contigo de manera confidencial.
+                    </div>
+                </div>
+            </section>
+
+            <hr class="custom-divider">
+
+            <section class="mb-4">
+                <h2 class="h5 fw-bold mb-3 text-center">GRACIAS POR CONFIAR EN ESTE PROCESO</h2>
+                <p class="mb-2 text-center">
+                    Tu reporte será evaluado conforme a la política interna, con enfoque de protección, debida diligencia y respeto.
+                </p>
+                <p class="mb-0 fw-bold text-center">En nuestra cultura, el respeto no es negociable.</p>
+            </section>
+
+            <div class="d-flex justify-content-center">
+                <button type="submit" class="admin-access-btn">
+                    Enviar reporte
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte {{ report.id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #222;
+            line-height: 1.4;
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 8px 0;
+            color: #513629;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 14px;
+            border-bottom: 1px solid #d9c3a5;
+            padding-bottom: 4px;
+            margin-top: 20px;
+        }
+
+        .meta {
+            margin-bottom: 16px;
+            text-align: center;
+            color: #666;
+        }
+
+        .grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        .grid td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            vertical-align: top;
+        }
+
+        .label {
+            font-weight: bold;
+            width: 30%;
+            background: #f8f3ec;
+        }
+
+        .narrative-box {
+            border: 1px solid #ddd;
+            padding: 12px;
+            background: #fff;
+            white-space: pre-wrap;
+        }
+
+        ul {
+            margin: 6px 0 0 18px;
+            padding: 0;
+        }
+
+        .evidence-image {
+            width: 100%;
+            max-width: 480px;
+            max-height: 500px;
+            object-fit: contain;
+            border: 1px solid #ccc;
+            margin-top: 8px;
+            margin-bottom: 12px;
+        }
+
+        .evidence-title {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .small {
+            font-size: 10px;
+            color: #666;
+        }
+
+        .logo-wrapper {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .logo {
+            max-width: 260px;
+            max-height: 90px;
+        }
+    </style>
+</head>
+<body>
+    {% if logo_uri %}
+        <div class="logo-wrapper">
+            <img src="{{ logo_uri }}" alt="Crepes & Waffles" class="logo">
+        </div>
+    {% endif %}
+    
+    <h1>Reporte de Conductas de Acoso Sexual</h1>
+
+    <div class="meta">
+        Consecutivo: {{ report.id }}<br>
+        Fecha de creación: {{ report.created_at.strftime('%d/%m/%Y %H:%M') if report.created_at else '' }}
+    </div>
+
+    <h2>Información del reportante</h2>
+    <table class="grid">
+        <tr>
+            <td class="label">Nombre</td>
+            <td>{{ report.reporter_name or '' }}</td>
+            <td class="label">Documento</td>
+            <td>{{ report.reporter_user.document if report.reporter_user and report.reporter_user.document else '' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Área</td>
+            <td>{{ report.reporter_area or '' }}</td>
+            <td class="label">Cargo</td>
+            <td>{{ report.reporter_position or '' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Correo</td>
+            <td>{{ report.reporter_user.email if report.reporter_user and report.reporter_user.email else '' }}</td>
+            <td class="label">Número de contacto</td>
+            <td>{{ report.reporter_user.phone if report.reporter_user and report.reporter_user.phone else '' }}</td>
+        </tr>
+    </table>
+
+    <h2>Información de la persona señalada</h2>
+    <table class="grid">
+        <tr>
+            <td class="label">Nombre</td>
+            <td>{{ report.accused_name or '' }}</td>
+            <td class="label">Área</td>
+            <td>{{ report.accused_area or '' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Cargo</td>
+            <td>{{ report.accused_position or '' }}</td>
+            <td class="label">Relación</td>
+            <td>
+                {{ relation_labels.get(report.accused_relation, report.accused_relation) }}
+                {% if report.accused_relation == 'otro' and report.accused_relation_other %}
+                    - {{ report.accused_relation_other }}
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <h2>Detalle del caso</h2>
+    <table class="grid">
+        <tr>
+            <td class="label">Frecuencia</td>
+            <td>{{ frequency_labels.get(report.frequency, report.frequency) }}</td>
+            <td class="label">Pruebas</td>
+            <td>{{ evidence_labels.get(report.has_evidence, report.has_evidence) }}</td>
+        </tr>
+        <tr>
+            <td class="label">Seguridad actual</td>
+            <td>{{ current_risk_labels.get(report.current_risk, report.current_risk) }}</td>
+            <td class="label">Acompañamiento psicológico</td>
+            <td>{{ psychological_support_labels.get(report.psychological_support, report.psychological_support) }}</td>
+        </tr>
+        <tr>
+            <td class="label">Estado</td>
+            <td>{{ status_labels.get(report.status, report.status) }}</td>
+            <td class="label">Fecha de finalización</td>
+            <td>{{ report.closed_at.strftime('%d/%m/%Y %H:%M') if report.closed_at else '' }}</td>
+        </tr>
+    </table>
+
+    <h2>Relato de los hechos</h2>
+    <div class="narrative-box">{{ report.narrative or '' }}</div>
+
+    <h2>Conductas</h2>
+    {% if report.behaviors %}
+        <ul>
+            {% for item in report.behaviors %}
+                <li>{{ item.behavior.name if item.behavior else ('Conducta ID: ' ~ item.behavior_id) }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay conductas asociadas.</p>
+    {% endif %}
+
+    <h2>Impactos</h2>
+    {% if report.impacts %}
+        <ul>
+            {% for item in report.impacts %}
+                <li>{{ item.impact.name if item.impact else ('Impacto ID: ' ~ item.impact_id) }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay impactos asociados.</p>
+    {% endif %}
+
+    <h2>Evidencias</h2>
+
+    {% if image_evidences %}
+        <h3>Imágenes adjuntas</h3>
+        {% for evidence in image_evidences %}
+            <div class="evidence-title">{{ evidence.file_name }}</div>
+            <img src="{{ evidence.file_uri }}" alt="{{ evidence.file_name }}" class="evidence-image">
+        {% endfor %}
+    {% endif %}
+
+    {% if file_evidences %}
+        <h3>Archivos adjuntos referenciados</h3>
+        <ul>
+            {% for evidence in file_evidences %}
+                <li>
+                    {{ evidence.file_name }}
+                    {% if evidence.mime_type %}
+                        <span class="small">({{ evidence.mime_type }})</span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if not image_evidences and not file_evidences %}
+        <p>No hay evidencias adjuntas.</p>
+    {% endif %}
+</body>
+</html>

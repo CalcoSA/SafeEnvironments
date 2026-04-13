@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Maestro de Conductas e Impactos{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <div class="border rounded-4 mt-4 p-4 mx-auto shadow-sm" style="max-width: 1200px; background-color: #FFFEF9;">
+        <div class="d-flex justify-content-end align-items-center mb-4">
+            <a href="{{ url_for('admin.reports') }}" class="admin-access-btn">
+                Volver a reportes
+            </a>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="border rounded-4 p-4 h-100">
+                    <h4 h2 class="h5 fw-bold mb-3">Conductas</h4>
+                    <form method="POST" action="{{ url_for('admin.create_behavior') }}" class="mb-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="input-group">
+                            <input type="text" name="name" class="form-control" placeholder="Nueva conducta" style="border-color: #513629 !important;" required>
+                            <button type="submit" class="admin-access-btn">
+                                Crear
+                            </button>
+                        </div>
+                    </form>
+                    {% if behaviors %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle" style="border-color: #513629 !important;">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th style="width: 40px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for behavior in behaviors %}
+                                        <tr>
+                                            <td>{{ behavior.name }}</td>
+                                            <td>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-warning open-delete-modal"
+                                                    title="Eliminar conducta"
+                                                    aria-label="Eliminar conducta"
+                                                    data-delete-url="{{ url_for('admin.delete_behavior', behavior_id=behavior.id) }}"
+                                                    data-item-name="{{ behavior.name }}"
+                                                    data-item-type="conducta">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            No hay conductas registradas.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="border rounded-4 p-4 h-100">
+                    <h4 h2 class="h5 fw-bold mb-3">Impactos</h4>
+                    <form method="POST" action="{{ url_for('admin.create_impact') }}" class="mb-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="input-group">
+                            <input type="text" name="name" class="form-control" placeholder="Nuevo impacto" style="border-color: #513629 !important;" required>
+                            <button type="submit" class="admin-access-btn">
+                                Crear
+                            </button>
+                        </div>
+                    </form>
+                    {% if impacts %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle" style="border-color: #513629 !important;">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th style="width: 40px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for impact in impacts %}
+                                        <tr>
+                                            <td>{{ impact.name }}</td>
+                                            <td>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-warning open-delete-modal"
+                                                    title="Eliminar impacto"
+                                                    aria-label="Eliminar impacto"
+                                                    data-delete-url="{{ url_for('admin.delete_impact', impact_id=impact.id) }}"
+                                                    data-item-name="{{ impact.name }}"
+                                                    data-item-type="impacto">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">
+                            No hay impactos registrados.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0" id="confirmDeleteMessage">
+                    ¿Está seguro de eliminar este registro?
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <form method="POST" id="confirmDeleteForm" class="m-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="admin-access-btn">
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const deleteButtons = document.querySelectorAll(".open-delete-modal");
+        const confirmDeleteForm = document.getElementById("confirmDeleteForm");
+        const confirmDeleteMessage = document.getElementById("confirmDeleteMessage");
+        const confirmDeleteModalElement = document.getElementById("confirmDeleteModal");
+        const confirmDeleteModal = new bootstrap.Modal(confirmDeleteModalElement);
+        deleteButtons.forEach(button => {
+            button.addEventListener("click", function () {
+                const deleteUrl = this.getAttribute("data-delete-url");
+                const itemName = this.getAttribute("data-item-name");
+                const itemType = this.getAttribute("data-item-type");
+                confirmDeleteForm.setAttribute("action", deleteUrl);
+                confirmDeleteMessage.textContent =
+                    `¿Está seguro de eliminar ${itemType === "conducta" ? "la" : "el"} ${itemType} "${itemName}"?`;
+                confirmDeleteModal.show();
+            });
+        });
+    });
+</script>
+
+{% endblock %}
