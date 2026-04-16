@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Administración de Parámetros{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <div class="border rounded-4 mt-4 p-4 mx-auto shadow-sm" style="max-width: 1280px; background-color: #FFFEF9;">
+        <div class="d-flex justify-content-end align-items-center mb-3 flex-wrap gap-2">
+            <a href="{{ url_for('admin.reports') }}" class="admin-access-btn">
+                Volver a Reportes
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin.create_parameter') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Clave</label>
+                            <input type="text" name="key" class="form-control" required placeholder="CASE_NOTIFICATION_EMAILS">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Valor</label>
+                            <input type="text" name="value" class="form-control" placeholder="correo1@dominio.com, correo2@dominio.com">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Descripción</label>
+                            <input type="text" name="description" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="admin-access-btn">
+                                Crear parámetro
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle reports-table" style="border-color: #513629 !important;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Clave</th>
+                        <th>Valor</th>
+                        <th>Descripción</th>
+                        <th style="width: 120px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if parameters %}
+                        {% for parameter in parameters %}
+                            <tr>
+                                <td>{{ parameter.id }}</td>
+                                <td>{{ parameter.key }}</td>
+                                <td>{{ parameter.value or '' }}</td>
+                                <td>{{ parameter.description or '' }}</td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-warning"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editParameterModal{{ parameter.id }}"
+                                            title="Editar parámetro">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+
+                                        <form method="POST" action="{{ url_for('admin.delete_parameter', parameter_id=parameter.id) }}" onsubmit="return confirm('¿Seguro que deseas eliminar este parámetro?');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar parámetro">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <div class="modal fade" id="editParameterModal{{ parameter.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <form method="POST" action="{{ url_for('admin.update_parameter', parameter_id=parameter.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="modal-content border-0 shadow">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Editar parámetro</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Clave</label>
+                                                        <input type="text" name="key" class="form-control" value="{{ parameter.key }}" required>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <label class="form-label">Valor</label>
+                                                        <input type="text" name="value" class="form-control" value="{{ parameter.value or '' }}">
+                                                        {% if parameter.key == 'CASE_NOTIFICATION_EMAILS' %}
+                                                            <p class="mb-0 text-muted small mt-1">
+                                                                Ingresa los correos separados por comas.
+                                                            </p>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Descripción</label>
+                                                        <input type="text" name="description" class="form-control" value="{{ parameter.description or '' }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="admin-access-btn">
+                                                    Guardar cambios
+                                                </button>
+                                                <button type="button" class="admin-access-btn" data-bs-dismiss="modal">
+                                                    Cerrar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                No hay parámetros registrados.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

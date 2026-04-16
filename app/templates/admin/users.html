@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Administración de Usuarios{% endblock %}
+<div class="d-flex justify-content-end align-items-center mb-4"></div>
+{% block content %}
+<div class="form-card">
+    <div class="border rounded-4 mt-4 p-4 mx-auto shadow-sm" style="max-width: 1280px; background-color: #FFFEF9;">
+        <div class="d-flex justify-content-end align-items-center mb-3 flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" class="admin-access-btn" data-bs-toggle="modal" data-bs-target="#userModal" onclick="openCreateUserModal()">
+                    <i class="bi bi-plus-lg"></i> Nuevo usuario
+                </button>
+                <a href="{{ url_for('admin.reports') }}" class="admin-access-btn">
+                    Volver a Reportes
+                </a>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle reports-table" style="border-color: #513629 !important;">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Usuario</th>
+                        <th>Documento</th>
+                        <th>Correo</th>
+                        <th>Teléfono</th>
+                        <th>Rol</th>
+                        <th>CDS</th>
+                        <th>Cargo</th>
+                        <th style="width: 120px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if users %}
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ user.name or '' }}</td>
+                                <td>{{ user.user_login or '' }}</td>
+                                <td>{{ user.document or '' }}</td>
+                                <td>{{ user.email or '' }}</td>
+                                <td>{{ user.phone or '' }}</td>
+                                <td>
+                                    {% if user.role == 'reporter' %}
+                                        Reportante
+                                    {% elif user.role == 'user' %}
+                                        Usuario
+                                    {% elif user.role == 'admin' %}
+                                        Administrador
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.area or '' }}</td>
+                                <td>{{ user.position or '' }}</td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-warning"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#userModal"
+                                            onclick='openEditUserModal({
+                                                id: {{ user.id }},
+                                                name: {{ user.name | tojson }},
+                                                user_login: {{ user.user_login | tojson }},
+                                                document: {{ user.document | tojson }},
+                                                email: {{ user.email | tojson }},
+                                                phone: {{ user.phone | tojson }},
+                                                role: {{ user.role | tojson }},
+                                                area: {{ user.area | tojson }},
+                                                position: {{ user.position | tojson }}
+                                            })'>
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" onsubmit="return confirm('¿Seguro que deseas eliminar este usuario?');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar usuario">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <div class="modal fade" id="userModal" tabindex="-1">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <form method="POST" id="userForm">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="modal-content border-0 shadow">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="userModalTitle">Crear usuario</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Nombre</label>
+                                                        <input type="text" name="name" id="name" class="form-control" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Usuario</label>
+                                                        <input type="text" name="user_login" id="user_login" class="form-control" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Documento</label>
+                                                        <input type="text" name="document" id="reporter_document_number" class="form-control" inputmode="numeric" pattern="[0-9]{1,11}" maxlength="11" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Correo</label>
+                                                        <input type="email" name="email" id="email" class="form-control" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Número de contacto</label>
+                                                        <input type="text" name="phone" id="reporter_phone_number" class="form-control" inputmode="numeric" pattern="[0-9]{1,11}" maxlength="11" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Rol</label>
+                                                        <select name="role" id="role" class="form-select" required>
+                                                            <option value="reporter">Reportante</option>
+                                                            <option value="user">Usuario</option>
+                                                            <option value="admin">Administrador</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Punto de venta / CDS</label>
+                                                        <input type="text" name="area" id="area" class="form-control" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Cargo</label>
+                                                        <input type="text" name="position" id="position" class="form-control" required>
+                                                    </div>
+                                                    <script>
+                                                        document.addEventListener("DOMContentLoaded", function () {
+                                                            const numericFields = [
+                                                                document.getElementById("reporter_document_number"),
+                                                                document.getElementById("reporter_phone_number")
+                                                            ];
+                                                            numericFields.forEach(field => {
+                                                                field.addEventListener("input", function () {
+                                                                    this.value = this.value.replace(/\D/g, "").slice(0, 11);
+                                                                });
+                                                            });
+                                                        });
+                                                    </script>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="admin-access-btn">
+                                                    Guardar
+                                                </button>
+                                                <button type="button" class="admin-access-btn" data-bs-dismiss="modal">
+                                                    Cerrar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">
+                                No hay usuarios registrados.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+function openCreateUserModal() {
+    document.getElementById("userModalTitle").innerText = "Crear usuario";
+    document.getElementById("userForm").action = "{{ url_for('admin.create_user') }}";
+    document.getElementById("name").value = "";
+    document.getElementById("user_login").value = "";
+    document.getElementById("reporter_document_number").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("reporter_phone_number").value = "";
+    document.getElementById("role").value = "reporter";
+    document.getElementById("area").value = "";
+    document.getElementById("position").value = "";
+}
+
+function openEditUserModal(user) {
+    document.getElementById("userModalTitle").innerText = "Editar usuario";
+    document.getElementById("userForm").action = "/admin/users/" + user.id + "/update";
+    document.getElementById("name").value = user.name || "";
+    document.getElementById("user_login").value = user.user_login || "";
+    document.getElementById("reporter_document_number").value = user.document || "";
+    document.getElementById("email").value = user.email || "";
+    document.getElementById("reporter_phone_number").value = user.phone || "";
+    document.getElementById("role").value = user.role || "reporter";
+    document.getElementById("area").value = user.area || "";
+    document.getElementById("position").value = user.position || "";
+}
+</script>
+{% endblock %}

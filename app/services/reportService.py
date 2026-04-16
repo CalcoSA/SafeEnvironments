@@ -1,5 +1,6 @@
 import os
 import uuid
+import pytz
 from flask import current_app
 from app.extensions import db
 from datetime import datetime
@@ -10,6 +11,7 @@ from app.domain.repositories.reportRepository import ReportRepository
 from app.domain.repositories.impactRepository import ImpactRepository
 from app.domain.repositories.behaviorRepository import BehaviorRepository
 from app.domain.repositories.evidenceRepository import EvidenceRepository
+from app.domain.repositories.reportHistoryRepository import ReportHistoryRepository
 
 class ReportService:
     FREQUENCY_MAP = {
@@ -46,6 +48,7 @@ class ReportService:
         "Nuevo": "nuevo",
         "Activo": "en_proceso",
         "Inactivo": "finalizado",
+        "Archivado": "archivado",
     }
 
     @staticmethod
@@ -169,6 +172,13 @@ class ReportService:
 
             report = ReportRepository.create(report_data)
 
+            ReportHistoryRepository.create({
+                "report_id": report.id,
+                "status": "nuevo",
+                "comment": "Reporte creado exitosamente.",
+                "changed_by_user_login": None,
+            })
+
             BehaviorRepository.link_behaviors(report.id, behavior_ids)
             ImpactRepository.link_impacts(report.id, impact_ids)
 
@@ -227,33 +237,62 @@ class ReportService:
         return EvidenceRepository.create_many(evidence_items)
 
     @staticmethod
-    def update_report_status(report_id: int, new_status: str):
+    def update_report_status(report_id: int, new_status: str, comment: str = None, changed_by_user_login: str = None):
         try:
             report = ReportRepository.get_by_id(report_id)
 
             if not report:
                 raise Exception("Reporte no encontrado")
 
-            if report.status == "finalizado":
-                raise Exception("El reporte ya está finalizado y no puede volver a actualizarse")
-
-            allowed_statuses = ["nuevo", "en_proceso", "finalizado"]
+            allowed_statuses = ["nuevo", "en_proceso", "finalizado", "archivado"]
 
             if new_status not in allowed_statuses:
                 raise Exception("El estado seleccionado no es válido")
+
+            if report.status == "archivado":
+                raise Exception("El reporte ya está archivado y no puede volver a actualizarse")
+
+            if report.status == "finalizado" and new_status != "archivado":
+                raise Exception("El reporte finalizado solo puede pasar a archivado")
+
+            comment = (comment or "").strip()
+            if not comment:
+                raise Exception("Debes ingresar un comentario para registrar el cambio de estado")
 
             data_to_update = {
                 "status": new_status
             }
 
             if new_status == "finalizado":
-                data_to_update["closed_at"] = datetime.utcnow()
-            else:
+                data_to_update["closed_at"] = datetime.now(
+                    pytz.timezone("America/Bogota")
+                ).replace(tzinfo=None)
+            elif new_status in ["nuevo", "en_proceso"]:
                 data_to_update["closed_at"] = None
 
             updated_report = ReportRepository.update(report, data_to_update)
 
+            ReportHistoryRepository.create({
+                "report_id": report.id,
+                "status": new_status,
+                "comment": comment,
+                "changed_by_user_login": changed_by_user_login,
+            })
+
             db.session.commit()
+
+            try:
+                from app.services.reportNotificationService import ReportNotificationService
+                ReportNotificationService.send_report_status_changed_notifications(
+                    updated_report,
+                    changed_by_user_login=changed_by_user_login,
+                    comment=comment
+                )
+            except Exception as mail_error:
+                current_app.logger.error(
+                    f"Error enviando notificación de cambio de estado del reporte {report.id}: {mail_error}"
+                )
+
             return updated_report
 
         except Exception:
