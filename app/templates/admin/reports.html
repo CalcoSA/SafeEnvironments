@@ -6,17 +6,28 @@
 <div class="form-card">
     <div class="border rounded-4 mt-4 p-4 mx-auto shadow-sm" style="max-width: 1280px; background-color: #FFFEF9;">
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <a href="{{ url_for('admin.catalogs') }}" class="admin-access-btn">
-                Maestro de Conductas e Impactos
-            </a>
-
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="{{ url_for('admin.catalogs') }}" class="admin-access-btn">
+                    Maestro de Conductas e Impactos
+                </a>
+                {% if session.get('can_manage_parameters') %}
+                    <a href="{{ url_for('admin.parameters') }}" class="admin-access-btn">
+                        Parámetros
+                    </a>
+                {% endif %}
+                {% if session.get('can_manage_users') %}
+                    <a href="{{ url_for('admin.users') }}" class="admin-access-btn">
+                        Usuarios
+                    </a>
+                {% endif %}
+            </div>
             <form method="GET" action="{{ url_for('admin.reports') }}" class="d-flex align-items-center gap-2">
-                <label for="status" class="form-label mb-0 fw-semibold">Filtrar por estado:</label>
                 <select name="status" id="status" class="form-select" style="width: 200px;">
                     <option value="">Todos</option>
                     <option value="nuevo" {% if selected_status == 'nuevo' %}selected{% endif %}>Nuevo</option>
                     <option value="en_proceso" {% if selected_status == 'en_proceso' %}selected{% endif %}>Activo</option>
                     <option value="finalizado" {% if selected_status == 'finalizado' %}selected{% endif %}>Inactivo</option>
+                    <option value="archivado" {% if selected_status == 'archivado' %}selected{% endif %}>Archivado</option>
                 </select>
                 <button type="submit" class="admin-access-btn btn-sm">Filtrar</button>
             </form>
@@ -38,9 +49,9 @@
                     <tr>
                         <th>Consecutivo</th>
                         <th>Reportante</th>
-                        <th>Área</th>
+                        <th>CDS</th>
                         <th>Acusado/a</th>
-                        <th>Área</th>
+                        <th>CDS</th>
                         <th>Creación</th>
                         <th>Finalización</th>
                         <th>Estado</th>
@@ -71,17 +82,28 @@
                                         <span class="badge bg-primary">Activo</span>
                                     {% elif report.status == 'finalizado' %}
                                         <span class="badge bg-secondary">Inactivo</span>
+                                    {% elif report.status == 'archivado' %}
+                                        <span class="badge bg-dark">Archivado</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-2">
                                         <button
                                             type="button"
+                                            class="btn btn-sm btn-outline-primary"
+                                            title="Visualizar"
+                                            aria-label="Visualizar reporte"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#viewReportModal{{ report.id }}">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button
+                                            type="button"
                                             class="btn btn-sm btn-outline-warning"
                                             title="Ver / editar reporte"
                                             aria-label="Ver / editar reporte"
                                             data-bs-toggle="modal"
-                                            data-bs-target="#editReportModal{{ report.id }}">
+                                            data-bs-target="#editStatusModal{{ report.id }}">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
                                         <a href="{{ url_for('report.export_pdf', report_id=report.id) }}" class="btn btn-sm btn-outline-danger" title="Exportar PDF">
@@ -90,218 +112,10 @@
                                     </div>
                                 </td>
                             </tr>
-                            <div class="modal fade" id="editReportModal{{ report.id }}" tabindex="-1" aria-labelledby="editReportModalLabel{{ report.id }}" aria-hidden="true">
-                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                                    <form method="POST" action="{{ url_for('report.update_status', report_id=report.id) }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <div class="modal-content border-0 shadow">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="editReportModalLabel{{ report.id }}">
-                                                    Detalle del reporte
-                                                </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="row g-3">
-                                                    <div class="col-12">
-                                                        <h5 class="fw-bold mb-2">Información del reportante</h5>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Nombre</label>
-                                                        <input type="text" class="form-control" value="{{ report.reporter_name or '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Documento</label>
-                                                        <input type="text" class="form-control" value="{{ report.reporter_user.document if report.reporter_user and report.reporter_user.document else '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Área</label>
-                                                        <input type="text" class="form-control" value="{{ report.reporter_area or '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Cargo</label>
-                                                        <input type="text" class="form-control" value="{{ report.reporter_position or '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Correo</label>
-                                                        <input type="text" class="form-control" value="{{ report.reporter_user.email if report.reporter_user and report.reporter_user.email else '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Número de contacto</label>
-                                                        <input type="text" class="form-control" value="{{ report.reporter_user.phone if report.reporter_user and report.reporter_user.phone else '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-12 mt-3">
-                                                        <h5 class="fw-bold mb-2">Información de la persona señalada</h5>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Nombre</label>
-                                                        <input type="text" class="form-control" value="{{ report.accused_name or '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Área</label>
-                                                        <input type="text" class="form-control" value="{{ report.accused_area or '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Cargo</label>
-                                                        <input type="text" class="form-control" value="{{ report.accused_position or '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Relación</label>
-                                                        <input type="text" class="form-control"
-                                                            value="{% if report.accused_relation == 'jefe_directo' %}Jefe/a directo/a{% elif report.accused_relation == 'companero' %}Compañero/a{% elif report.accused_relation == 'persona_a_cargo' %}Persona a cargo{% elif report.accused_relation == 'proveedor' %}Proveedor/a{% elif report.accused_relation == 'cliente' %}Cliente{% elif report.accused_relation == 'otro' %}Otro{% endif %}"
-                                                            readonly>
-                                                    </div>
-                                                    {% if report.accused_relation == 'otro' %}
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Especifique relación</label>
-                                                        <input type="text" class="form-control" value="{{ report.accused_relation_other or '' }}" readonly>
-                                                    </div>
-                                                    {% endif %}
-                                                    <div class="col-12 mt-3">
-                                                        <h5 class="fw-bold mb-2">Detalle del caso</h5>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Frecuencia</label>
-                                                        <input type="text" class="form-control"
-                                                            value="{% if report.frequency == 'una_vez' %}Una sola vez{% elif report.frequency == 'mas_de_una_vez' %}Más de una vez{% elif report.frequency == 'reiterada' %}De manera reiterada{% endif %}"
-                                                            readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Pruebas</label>
-                                                        <input type="text" class="form-control"
-                                                            value="{% if report.has_evidence == 'si' %}Sí{% elif report.has_evidence == 'no' %}No{% elif report.has_evidence == 'investigar_sin_pruebas' %}No tengo pruebas pero deseo que se investigue{% endif %}"
-                                                            readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Seguridad actual</label>
-                                                        <input type="text" class="form-control"
-                                                            value="{% if report.current_risk == 'si' %}Sí{% elif report.current_risk == 'no' %}No{% elif report.current_risk == 'no_segura' %}No estoy segura{% endif %}"
-                                                            readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Acompañamiento psicológico</label>
-                                                        <input type="text" class="form-control"
-                                                            value="{% if report.psychological_support == 'prioritario' %}Sí, lo necesito de manera prioritaria{% elif report.psychological_support == 'orientacion' %}Sí, me gustaría recibir orientación{% elif report.psychological_support == 'no' %}No por ahora{% elif report.psychological_support == 'mas_informacion' %}Necesito más información sobre este apoyo{% endif %}"
-                                                            readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Fecha de creación</label>
-                                                        <input type="text" class="form-control" value="{{ report.created_at.strftime('%d/%m/%Y %H:%M') if report.created_at else '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label fw-semibold">Fecha de finalización</label>
-                                                        <input type="text" class="form-control" value="{{ report.closed_at.strftime('%d/%m/%Y %H:%M') if report.closed_at else '' }}" readonly>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <label class="form-label fw-semibold">Relato de los hechos</label>
-                                                        <textarea class="form-control" rows="5" readonly>{{ report.narrative or '' }}</textarea>
-                                                    </div>
-                                                    <div class="col-12 mt-3">
-                                                        <h6 class="fw-bold mb-2">Conductas</h6>
-                                                        {% if report.behaviors %}
-                                                            <ul class="mb-0">
-                                                                {% for item in report.behaviors %}
-                                                                    <li>
-                                                                        {% if item.behavior %}
-                                                                            {{ item.behavior.name }}
-                                                                        {% else %}
-                                                                            Conducta ID: {{ item.behavior_id }}
-                                                                        {% endif %}
-                                                                    </li>
-                                                                {% endfor %}
-                                                            </ul>
-                                                        {% else %}
-                                                            <p class="mb-0 text-muted">No hay conductas asociadas.</p>
-                                                        {% endif %}
-                                                    </div>
-                                                    <div class="col-12 mt-3">
-                                                        <h6 class="fw-bold mb-2">Impactos</h6>
-                                                        {% if report.impacts %}
-                                                            <ul class="mb-0">
-                                                                {% for item in report.impacts %}
-                                                                    <li>
-                                                                        {% if item.impact %}
-                                                                            {{ item.impact.name }}
-                                                                        {% else %}
-                                                                            Impacto ID: {{ item.impact_id }}
-                                                                        {% endif %}
-                                                                    </li>
-                                                                {% endfor %}
-                                                            </ul>
-                                                        {% else %}
-                                                            <p class="mb-0 text-muted">No hay impactos asociados.</p>
-                                                        {% endif %}
-                                                    </div>
-                                                    <div class="col-12 mt-3">
-                                                        <h6 class="fw-bold mb-2">Evidencias</h6>
-                                                        {% if report.evidences %}
-                                                            <ul class="list-group">
-                                                                {% for evidence in report.evidences %}
-                                                                    <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                                                        <span>{{ evidence.file_name }}</span>
-
-                                                                        <div class="d-flex gap-2">
-                                                                            {% if evidence.mime_type in ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'] %}
-                                                                                <a
-                                                                                    href="{{ url_for('report.view_evidence', evidence_id=evidence.id) }}"
-                                                                                    target="_blank"
-                                                                                    class="btn btn-sm btn-outline-primary"
-                                                                                >
-                                                                                    Ver
-                                                                                </a>
-                                                                            {% endif %}
-
-                                                                            <a
-                                                                                href="{{ url_for('report.download_evidence', evidence_id=evidence.id) }}"
-                                                                                class="btn btn-sm btn-outline-secondary"
-                                                                            >
-                                                                                Descargar
-                                                                            </a>
-                                                                        </div>
-                                                                    </li>
-                                                                {% endfor %}
-                                                            </ul>
-                                                        {% else %}
-                                                            <p class="mb-0 text-muted">No hay evidencias adjuntas.</p>
-                                                        {% endif %}
-                                                    </div>
-                                                    <hr class="custom-divider">
-                                                    <div class="col-12 mt-2">
-                                                        <label for="status_{{ report.id }}" class="form-label fw-semibold">Estado</label>
-                                                        {% if report.status == 'finalizado' %}
-                                                            <input type="text" class="form-control mb-2" value="Inactivo" readonly>
-                                                            <div class="alert alert-secondary mb-0">
-                                                                Este reporte ya está finalizado. No se puede volver a cambiar el estado.
-                                                            </div>
-                                                        {% else %}
-                                                            <select name="status" id="status_{{ report.id }}" class="form-select">
-                                                                <option value="nuevo" {% if report.status == 'nuevo' %}selected{% endif %}>Nuevo</option>
-                                                                <option value="en_proceso" {% if report.status == 'en_proceso' %}selected{% endif %}>Activo</option>
-                                                                <option value="finalizado" {% if report.status == 'finalizado' %}selected{% endif %}>Inactivo</option>
-                                                            </select>
-                                                            <p class="mb-0 text-muted small">
-                                                                Si cambias el estado a Inactivo, el proceso quedará finalizado y no podrás volver a modificar su estado.
-                                                            </p>
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="submit" class="admin-access-btn">
-                                                    Guardar cambios
-                                                </button>
-                                                <button type="button" class="admin-access-btn" data-bs-dismiss="modal">
-                                                    Cerrar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
+                            <td colspan="9" class="text-center text-muted py-4">
                                 No hay reportes registrados por el momento.
                             </td>
                         </tr>
@@ -309,38 +123,395 @@
                 </tbody>
             </table>
         </div>
+        {% if reports %}
+            {% for report in reports %}
+                <div class="modal fade" id="viewReportModal{{ report.id }}" tabindex="-1" aria-labelledby="viewReportModalLabel{{ report.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <form method="POST" action="{{ url_for('report.update_status', report_id=report.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="modal-content border-0 shadow">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="viewReportModalLabel{{ report.id }}">
+                                        Detalle del reporte
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <h5 class="fw-bold mb-2">Información del reportante</h5>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Nombre</label>
+                                            <input type="text" class="form-control" value="{{ report.reporter_name or '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Documento</label>
+                                            <input type="text" class="form-control" value="{{ report.reporter_user.document if report.reporter_user and report.reporter_user.document else '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Área</label>
+                                            <input type="text" class="form-control" value="{{ report.reporter_area or '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Cargo</label>
+                                            <input type="text" class="form-control" value="{{ report.reporter_position or '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Correo</label>
+                                            <input type="text" class="form-control" value="{{ report.reporter_user.email if report.reporter_user and report.reporter_user.email else '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Número de contacto</label>
+                                            <input type="text" class="form-control" value="{{ report.reporter_user.phone if report.reporter_user and report.reporter_user.phone else '' }}" readonly>
+                                        </div>
+                                        <div class="col-12 mt-3">
+                                            <h5 class="fw-bold mb-2">Información de la persona señalada</h5>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Nombre</label>
+                                            <input type="text" class="form-control" value="{{ report.accused_name or '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Área</label>
+                                            <input type="text" class="form-control" value="{{ report.accused_area or '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Cargo</label>
+                                            <input type="text" class="form-control" value="{{ report.accused_position or '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Relación</label>
+                                            <input type="text" class="form-control"
+                                                value="{% if report.accused_relation == 'jefe_directo' %}Jefe/a directo/a{% elif report.accused_relation == 'companero' %}Compañero/a{% elif report.accused_relation == 'persona_a_cargo' %}Persona a cargo{% elif report.accused_relation == 'proveedor' %}Proveedor/a{% elif report.accused_relation == 'cliente' %}Cliente{% elif report.accused_relation == 'otro' %}Otro{% endif %}"
+                                                readonly>
+                                        </div>
+                                        {% if report.accused_relation == 'otro' %}
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Especifique relación</label>
+                                            <input type="text" class="form-control" value="{{ report.accused_relation_other or '' }}" readonly>
+                                        </div>
+                                        {% endif %}
+                                        <div class="col-12 mt-3">
+                                            <h5 class="fw-bold mb-2">Detalle del caso</h5>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Frecuencia</label>
+                                            <input type="text" class="form-control"
+                                                value="{% if report.frequency == 'una_vez' %}Una sola vez{% elif report.frequency == 'mas_de_una_vez' %}Más de una vez{% elif report.frequency == 'reiterada' %}De manera reiterada{% endif %}"
+                                                readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Pruebas</label>
+                                            <input type="text" class="form-control"
+                                                value="{% if report.has_evidence == 'si' %}Sí{% elif report.has_evidence == 'no' %}No{% elif report.has_evidence == 'investigar_sin_pruebas' %}No tengo pruebas pero deseo que se investigue{% endif %}"
+                                                readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Seguridad actual</label>
+                                            <input type="text" class="form-control"
+                                                value="{% if report.current_risk == 'si' %}Sí{% elif report.current_risk == 'no' %}No{% elif report.current_risk == 'no_segura' %}No estoy segura{% endif %}"
+                                                readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Acompañamiento psicológico</label>
+                                            <input type="text" class="form-control"
+                                                value="{% if report.psychological_support == 'prioritario' %}Sí, lo necesito de manera prioritaria{% elif report.psychological_support == 'orientacion' %}Sí, me gustaría recibir orientación{% elif report.psychological_support == 'no' %}No por ahora{% elif report.psychological_support == 'mas_informacion' %}Necesito más información sobre este apoyo{% endif %}"
+                                                readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Fecha de creación</label>
+                                            <input type="text" class="form-control" value="{{ report.created_at.strftime('%d/%m/%Y %H:%M') if report.created_at else '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Fecha de finalización</label>
+                                            <input type="text" class="form-control" value="{{ report.closed_at.strftime('%d/%m/%Y %H:%M') if report.closed_at else '' }}" readonly>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">Relato de los hechos</label>
+                                            <textarea class="form-control" rows="5" readonly>{{ report.narrative or '' }}</textarea>
+                                        </div>
+                                        <div class="col-6 mt-2">
+                                            <label for="status_{{ report.id }}" class="form-label fw-semibold">Estado</label>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="status_{{ report.id }}"
+                                                value="{% if report.status == 'nuevo' %}Nuevo{% elif report.status == 'en_proceso' %}Activo{% elif report.status == 'finalizado' %}Inactivo{% else %}-{% endif %}"
+                                                readonly>
+                                        </div>
+                                        <div class="col-12 mt-3">
+                                            <h6 class="fw-bold mb-2">Conductas</h6>
+                                            {% if report.behaviors %}
+                                                <ul class="mb-0">
+                                                    {% for item in report.behaviors %}
+                                                        <li>
+                                                            {% if item.behavior %}
+                                                                {{ item.behavior.name }}
+                                                            {% else %}
+                                                                Conducta ID: {{ item.behavior_id }}
+                                                            {% endif %}
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <p class="mb-0 text-muted">No hay conductas asociadas.</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-12 mt-3">
+                                            <h6 class="fw-bold mb-2">Impactos</h6>
+                                            {% if report.impacts %}
+                                                <ul class="mb-0">
+                                                    {% for item in report.impacts %}
+                                                        <li>
+                                                            {% if item.impact %}
+                                                                {{ item.impact.name }}
+                                                            {% else %}
+                                                                Impacto ID: {{ item.impact_id }}
+                                                            {% endif %}
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <p class="mb-0 text-muted">No hay impactos asociados.</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-12 mt-3">
+                                            <h6 class="fw-bold mb-2">Evidencias</h6>
+                                            {% if report.evidences %}
+                                                <ul class="list-group">
+                                                    {% for evidence in report.evidences %}
+                                                        <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                            <span>{{ evidence.file_name }}</span>
+                                                            <div class="d-flex gap-2">
+                                                                {% if evidence.mime_type in ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'] %}
+                                                                    <a
+                                                                        href="{{ url_for('report.view_evidence', evidence_id=evidence.id) }}"
+                                                                        target="_blank"
+                                                                        class="btn btn-sm btn-outline-primary"
+                                                                    >
+                                                                        Ver
+                                                                    </a>
+                                                                {% endif %}
+                                                                <a
+                                                                    href="{{ url_for('report.download_evidence', evidence_id=evidence.id) }}"
+                                                                    class="btn btn-sm btn-outline-secondary"
+                                                                >
+                                                                    Descargar
+                                                                </a>
+                                                            </div>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <p class="mb-0 text-muted">No hay evidencias adjuntas.</p>
+                                            {% endif %}
+                                        </div>
+                                        <!--hr class="custom-divider"-->
+                                        <!--div class="col-12 mt-2">
+                                            <label for="status_{{ report.id }}" class="form-label fw-semibold">Estado</label>
+                                            {% if report.status == 'finalizado' %}
+                                                <input type="text" class="form-control mb-2" value="Inactivo" readonly>
+                                                <div class="alert alert-secondary mb-0">
+                                                    Este reporte ya está finalizado. No se puede volver a cambiar el estado.
+                                                </div>
+                                            {% else %}
+                                                <select name="status" id="status_{{ report.id }}" class="form-select">
+                                                    <option value="nuevo" {% if report.status == 'nuevo' %}selected{% endif %}>Nuevo</option>
+                                                    <option value="en_proceso" {% if report.status == 'en_proceso' %}selected{% endif %}>Activo</option>
+                                                    <option value="finalizado" {% if report.status == 'finalizado' %}selected{% endif %}>Inactivo</option>
+                                                </select>
+                                                <p class="mb-0 text-muted small">
+                                                    Si cambias el estado a Inactivo, el proceso quedará finalizado y no podrás volver a modificar su estado.
+                                                </p>
+                                            {% endif %}
+                                        </div-->
+                                        <div class="col-12 mt-4">
+                                            <h6 class="fw-bold mb-2">Historial del caso</h6>
+                                            {% if report.history %}
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-bordered align-middle mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Fecha</th>
+                                                                <th>Estado</th>
+                                                                <th>Usuario</th>
+                                                                <th>Comentario</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for item in report.history %}
+                                                                <tr>
+                                                                    <td>{{ item.created_at.strftime('%d/%m/%Y %H:%M') if item.created_at else '' }}</td>
+                                                                    <td>
+                                                                        {% if item.status == 'nuevo' %}
+                                                                            Nuevo
+                                                                        {% elif item.status == 'en_proceso' %}
+                                                                            Activo
+                                                                        {% elif item.status == 'finalizado' %}
+                                                                            Inactivo
+                                                                        {% elif item.status == 'archivado' %}
+                                                                            Archivado
+                                                                        {% else %}
+                                                                            {{ item.status }}
+                                                                        {% endif %}
+                                                                    </td>
+                                                                    <td>{{ item.changed_by_user_login or '' }}</td>
+                                                                    <td>{{ item.comment or '' }}</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            {% else %}
+                                                <p class="mb-0 text-muted">No hay historial registrado.</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <!--button type="submit" class="admin-access-btn">
+                                        Guardar cambios
+                                    </button-->
+                                    <button type="button" class="admin-access-btn" data-bs-dismiss="modal">
+                                        Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="modal fade" id="editStatusModal{{ report.id }}" tabindex="-1" aria-labelledby="editStatusModalLabel{{ report.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-md modal-dialog-scrollable">
+                        <form method="POST" action="{{ url_for('report.update_status', report_id=report.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="modal-content border-0 shadow">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="editStatusModalLabel{{ report.id }}">
+                                        Actualizar estado del reporte #{{ report.id }}
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">Reportante</label>
+                                            <input type="text" class="form-control" value="{{ report.reporter_name or '' }}" readonly>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">Persona señalada</label>
+                                            <input type="text" class="form-control" value="{{ report.accused_name or '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Estado actual</label>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                value="{% if report.status == 'nuevo' %}Nuevo{% elif report.status == 'en_proceso' %}Activo{% elif report.status == 'finalizado' %}Inactivo{% elif report.status == 'archivado' %}Archivado{% else %}-{% endif %}"
+                                                readonly
+                                            >
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="status_edit_{{ report.id }}" class="form-label fw-semibold">Nuevo estado</label>
+                                            {% if report.status == 'archivado' %}
+                                                <input type="text" class="form-control" value="Archivado" readonly>
+                                                <div class="alert alert-secondary mt-2 mb-0">
+                                                    Este reporte ya está archivado y no puede volver a cambiarse.
+                                                </div>
+                                            {% else %}
+                                                <select name="status" id="status_edit_{{ report.id }}" class="form-select" required>
+                                                    {% if report.status == 'nuevo' %}
+                                                        <option value="nuevo" selected>Nuevo</option>
+                                                        <option value="en_proceso">Activo</option>
+                                                        <option value="finalizado">Inactivo</option>
+                                                        <option value="archivado">Archivado</option>
+                                                    {% elif report.status == 'en_proceso' %}
+                                                        <option value="nuevo">Nuevo</option>
+                                                        <option value="en_proceso" selected>Activo</option>
+                                                        <option value="finalizado">Inactivo</option>
+                                                        <option value="archivado">Archivado</option>
+                                                    {% elif report.status == 'finalizado' %}
+                                                        <option value="finalizado" selected>Inactivo</option>
+                                                        <option value="archivado">Archivado</option>
+                                                    {% else %}
+                                                        <option value="nuevo">Nuevo</option>
+                                                        <option value="en_proceso">Activo</option>
+                                                        <option value="finalizado">Inactivo</option>
+                                                        <option value="archivado">Archivado</option>
+                                                    {% endif %}
+                                                </select>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="comment_{{ report.id }}" class="form-label fw-semibold">Comentario</label>
+                                            {% if report.status == 'archivado' %}
+                                                <textarea
+                                                    id="comment_{{ report.id }}"
+                                                    class="form-control"
+                                                    rows="4"
+                                                    readonly
+                                                >Este reporte ya fue archivado.</textarea>
+                                            {% else %}
+                                                <textarea
+                                                    name="comment"
+                                                    id="comment_{{ report.id }}"
+                                                    class="form-control"
+                                                    rows="4"
+                                                    placeholder="Escribe el motivo o comentario del cambio de estado..."
+                                                    required
+                                                ></textarea>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    {% if report.status != 'archivado' %}
+                                        <button type="submit" class="admin-access-btn">
+                                            Guardar cambio
+                                        </button>
+                                    {% endif %}
+                                    <button type="button" class="admin-access-btn" data-bs-dismiss="modal">
+                                        Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
         {% if pagination and pagination.pages > 1 %}
-        <nav aria-label="Paginación de reportes" class="mt-4">
-            <ul class="pagination justify-content-center mb-0 pagination-gray">
-                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                    <a class="page-link"
-                    href="{{ url_for('admin.reports', page=pagination.prev_num, status=selected_status) if pagination.has_prev else '#' }}">
-                        Anterior
-                    </a>
-                </li>
-                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
-                    {% if page_num %}
-                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-                            <a class="page-link"
-                            href="{{ url_for('admin.reports', page=page_num, status=selected_status) }}">
-                                {{ page_num }}
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">…</span>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                    <a class="page-link"
-                    href="{{ url_for('admin.reports', page=pagination.next_num, status=selected_status) if pagination.has_next else '#' }}">
-                        Siguiente
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    {% endif %}
+            <nav aria-label="Paginación de reportes" class="mt-4">
+                <ul class="pagination justify-content-center mb-0 pagination-gray">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link"
+                        href="{{ url_for('admin.reports', page=pagination.prev_num, status=selected_status) if pagination.has_prev else '#' }}">
+                            Anterior
+                        </a>
+                    </li>
+                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                <a class="page-link"
+                                href="{{ url_for('admin.reports', page=page_num, status=selected_status) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link"
+                        href="{{ url_for('admin.reports', page=pagination.next_num, status=selected_status) if pagination.has_next else '#' }}">
+                            Siguiente
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

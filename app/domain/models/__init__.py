@@ -5,6 +5,8 @@ from .behavior import Behavior
 from .evidence import Evidence
 from .report_behavior import ReportBehavior
 from .report_impact import ReportImpact
+from .system_Parameter import SystemParameter
+from .report_History import ReportHistory
 
 __all__ = [
     "User",
@@ -14,4 +16,6 @@ __all__ = [
     "Report",
     "ReportBehavior",
     "ReportImpact",
+    "SystemParameter",
+    "ReportHistory",
 ]

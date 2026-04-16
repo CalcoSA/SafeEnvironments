@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, session, current_app
-from app.services.accessControl import validate_wp_access, intranet_only_required, is_intranet_admin
+from app.services.accessControl import validate_wp_access, intranet_only_required, get_intranet_user_access
 from app.services.reportPdfService import ReportPdfService
 from app.services.catalogService import CatalogService
 from app.services.reportService import ReportService
@@ -19,10 +19,16 @@ def access():
     if not validate_wp_access(user, ts, sig):
         flash("El enlace de acceso no es válido o expiró.", "warning")
         return redirect(current_app.config["INTRANET_URL"])
+    
+    access_data = get_intranet_user_access(user)
 
     session["allowed_from_intranet"] = True
     session["intranet_user"] = user
-    session["can_access_admin"] = is_intranet_admin(user)
+    session["db_user_exists"] = access_data["exists"]
+    session["user_role"] = access_data["role"]
+    session["can_access_admin"] = access_data["can_access_admin"]
+    session["can_manage_parameters"] = access_data["can_manage_parameters"]
+    session["can_manage_users"] = access_data["can_manage_users"]
     session.permanent = True
 
     return redirect(url_for("report.create_form"))
@@ -94,7 +100,15 @@ def show(report_id):
 def update_status(report_id):
     try:
         new_status = request.form.get("status")
-        ReportService.update_report_status(report_id, new_status)
+        comment = request.form.get("comment")
+        changed_by_user_login = session.get("intranet_user")
+
+        ReportService.update_report_status(
+            report_id=report_id,
+            new_status=new_status,
+            comment=comment,
+            changed_by_user_login=changed_by_user_login
+        )
 
         flash("El estado del reporte fue actualizado correctamente.", "success")
         return redirect(url_for("admin.reports"))
@@ -151,4 +165,9 @@ def export_pdf(report_id):
 def exit_form():
     session.pop("allowed_from_intranet", None)
     session.pop("intranet_user", None)
+    session.pop("db_user_exists", None)
+    session.pop("user_role", None)
+    session.pop("can_access_admin", None)
+    session.pop("can_manage_parameters", None)
+    session.pop("can_manage_users", None)
     return redirect(current_app.config["INTRANET_URL"])

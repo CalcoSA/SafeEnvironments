@@ -1,5 +1,6 @@
 from app.extensions import db
 from datetime import datetime
+import pytz
 
 class Report(db.Model):
     __tablename__ = "reports"
@@ -14,7 +15,7 @@ class Report(db.Model):
     accused_area = db.Column(db.String(150), nullable=False)
     accused_position = db.Column(db.String(150), nullable=False)
     narrative = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone("America/Bogota")).replace(tzinfo=None), nullable=False)
     closed_at = db.Column(db.DateTime, nullable=True)
     accused_relation = db.Column(
         db.Enum("jefe_directo", "companero", "persona_a_cargo", "proveedor", "cliente", "otro"),
@@ -38,7 +39,7 @@ class Report(db.Model):
         nullable=False
     )
     status = db.Column(
-        db.Enum("nuevo", "en_proceso", "finalizado"),
+        db.Enum("nuevo", "en_proceso", "finalizado", "archivado"),
         default="nuevo",
         nullable=False
     )
@@ -64,4 +65,10 @@ class Report(db.Model):
     evidences = db.relationship(
         "Evidence",
         cascade="all, delete-orphan"
+    )
+    history = db.relationship(
+        "ReportHistory",
+        back_populates="report",
+        cascade="all, delete-orphan",
+        order_by="ReportHistory.created_at.asc()"
     )
