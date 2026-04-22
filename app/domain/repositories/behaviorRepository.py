@@ -48,6 +48,8 @@ class BehaviorRepository:
         behavior = Behavior.query.get(behavior_id)
         if not behavior:
             return False, "Conducta no encontrada"
+        if (behavior.name or "").strip().lower() == "otra":
+            return False, "La conducta 'Otra' es un registro obligatorio y no puede eliminarse"
         in_use = db.session.query(
             exists().where(ReportBehavior.behavior_id == behavior_id)
         ).scalar()

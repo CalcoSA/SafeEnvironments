@@ -48,6 +48,8 @@ class ImpactRepository:
         impact = Impact.query.get(impact_id)
         if not impact:
             return False, "Impacto no encontrado"
+        if (impact.name or "").strip().lower() == "otro":
+            return False, "El impacto 'Otro' es un registro obligatorio y no puede eliminarse"
         relation = ReportImpact.query.filter_by(impact_id=impact_id).first()
         if relation:
             return False, "No se puede eliminar el impacto porque está asociado a uno o más reportes"
