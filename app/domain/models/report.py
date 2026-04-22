@@ -5,7 +5,7 @@ import pytz
 class Report(db.Model):
     __tablename__ = "reports"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=False)
     reporter_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     accused_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     reporter_name = db.Column(db.String(150), nullable=False)
@@ -43,7 +43,6 @@ class Report(db.Model):
         default="nuevo",
         nullable=False
     )
-
     reporter_user = db.relationship(
         "User",
         foreign_keys=[reporter_user_id],

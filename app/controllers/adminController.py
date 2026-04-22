@@ -1,5 +1,5 @@
 from app.services.accessControl import admin_only_required, parameters_only_required, users_only_required
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from app.services.systemParameterService import SystemParameterService
 from app.services.catalogService import CatalogService
 from app.services.reportService import ReportService
@@ -131,3 +131,37 @@ def delete_parameter(parameter_id):
         flash(f"Ocurrió un error al eliminar el parámetro: {str(e)}", "danger")
 
     return redirect(url_for("admin.parameters"))
+
+@admin_bp.route("/reports/manual-create", methods=["POST"])
+@admin_only_required
+def create_manual_report():
+    try:
+        files = request.files.getlist("evidence_files")
+
+        form_data = {
+            "reporter_full_name": request.form.get("reporter_full_name"),
+            "reporter_document_number": request.form.get("reporter_document_number"),
+            "reporter_point_of_sale_area": request.form.get("reporter_point_of_sale_area"),
+            "reporter_current_position": request.form.get("reporter_current_position"),
+            "reporter_email": request.form.get("reporter_email"),
+            "reporter_phone_number": request.form.get("reporter_phone_number"),
+
+            "involved_person_name": request.form.get("involved_person_name"),
+            "involved_person_position": request.form.get("involved_person_position"),
+            "involved_person_point_of_sale": request.form.get("involved_person_point_of_sale"),
+        }
+
+        created_by_user_login = session.get("intranet_user")
+
+        ReportService.create_manual_report(
+            form_data=form_data,
+            files=files,
+            created_by_user_login=created_by_user_login
+        )
+
+        flash("El reporte manual fue registrado correctamente.", "success")
+
+    except Exception as e:
+        flash(f"Ocurrió un error al crear el reporte manual: {str(e)}", "danger")
+
+    return redirect(url_for("admin.reports"))

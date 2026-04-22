@@ -21,6 +21,14 @@
                     </a>
                 {% endif %}
             </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button
+                type="button"
+                class="admin-access-btn"
+                data-bs-toggle="modal"
+                data-bs-target="#manualReportModal">
+                Cargar reporte manual
+            </button>
             <form method="GET" action="{{ url_for('admin.reports') }}" class="d-flex align-items-center gap-2">
                 <select name="status" id="status" class="form-select" style="width: 200px;">
                     <option value="">Todos</option>
@@ -31,6 +39,7 @@
                 </select>
                 <button type="submit" class="admin-access-btn btn-sm">Filtrar</button>
             </form>
+        </div>
         </div>
         <div class="table-responsive">
             <table class="table table-bordered table-hover align-middle reports-table" style="border-color: #513629 !important;">
@@ -122,6 +131,96 @@
                     {% endif %}
                 </tbody>
             </table>
+        </div>
+        <div class="modal fade" id="manualReportModal" tabindex="-1" aria-labelledby="manualReportModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <form method="POST" action="{{ url_for('admin.create_manual_report') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="manualReportModalLabel">
+                                Cargar reporte manual
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-light border mb-4">
+                                Este formulario crea un reporte manual con valores por defecto:
+                                conducta = ID 1, impacto = ID 1, estado = Nuevo.
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <h5 class="fw-bold mb-2">Información de quien reporta</h5>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="manual_reporter_full_name" class="form-label fw-semibold">Nombre completo</label>
+                                    <input type="text" class="form-control" id="manual_reporter_full_name" name="reporter_full_name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="manual_reporter_document_number" class="form-label fw-semibold">Número de documento</label>
+                                    <input type="text" class="form-control" id="manual_reporter_document_number" name="reporter_document_number" inputmode="numeric" pattern="[0-9]{1,11}" maxlength="11" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="manual_reporter_point_of_sale_area" class="form-label fw-semibold">Punto de venta / CDS</label>
+                                    <input type="text" class="form-control" id="manual_reporter_point_of_sale_area" name="reporter_point_of_sale_area" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="manual_reporter_current_position" class="form-label fw-semibold">Cargo actual</label>
+                                    <input type="text" class="form-control" id="manual_reporter_current_position" name="reporter_current_position" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="manual_reporter_email" class="form-label fw-semibold">Correo electrónico</label>
+                                    <input type="email" class="form-control" id="manual_reporter_email" name="reporter_email" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="manual_reporter_phone_number" class="form-label fw-semibold">Número de contacto</label>
+                                    <input type="text" class="form-control" id="manual_reporter_phone_number" name="reporter_phone_number" inputmode="numeric" pattern="[0-9]{1,11}" maxlength="11" required>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <h5 class="fw-bold mb-2">Información de la persona señalada</h5>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="manual_involved_person_name" class="form-label fw-semibold">Nombre</label>
+                                    <input type="text" class="form-control" id="manual_involved_person_name" name="involved_person_name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="manual_involved_person_position" class="form-label fw-semibold">Cargo</label>
+                                    <input type="text" class="form-control" id="manual_involved_person_position" name="involved_person_position" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="manual_involved_person_point_of_sale" class="form-label fw-semibold">Punto de venta / CDS</label>
+                                    <input type="text" class="form-control" id="manual_involved_person_point_of_sale" name="involved_person_point_of_sale" required>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <h5 class="fw-bold mb-2">Documento(s) de prueba</h5>
+                                </div>
+                                <div class="col-12">
+                                    <label for="manual_evidence_files" class="form-label fw-semibold">Adjuntar archivo(s)</label>
+                                    <input
+                                        class="form-control"
+                                        type="file"
+                                        id="manual_evidence_files"
+                                        name="evidence_files"
+                                        accept=".pdf,.png,.jpg,.jpeg"
+                                        multiple
+                                    >
+                                    <div class="form-text">
+                                        Puedes adjuntar el reporte escrito escaneado u otros soportes.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="admin-access-btn">
+                                Crear reporte
+                            </button>
+                            <button type="button" class="admin-access-btn" data-bs-dismiss="modal">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
         {% if reports %}
             {% for report in reports %}
@@ -514,4 +613,19 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const numericFields = [
+            document.getElementById("manual_reporter_document_number"),
+            document.getElementById("manual_reporter_phone_number")
+        ];
+        numericFields.forEach(field => {
+            if (!field) return;
+            field.addEventListener("input", function () {
+                this.value = this.value.replace(/\D/g, "").slice(0, 11);
+            });
+        });
+    });
+</script>
 {% endblock %}

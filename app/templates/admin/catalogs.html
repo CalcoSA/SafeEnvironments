@@ -37,16 +37,20 @@
                                         <tr>
                                             <td>{{ behavior.name }}</td>
                                             <td>
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-sm btn-outline-warning open-delete-modal"
-                                                    title="Eliminar conducta"
-                                                    aria-label="Eliminar conducta"
-                                                    data-delete-url="{{ url_for('admin.delete_behavior', behavior_id=behavior.id) }}"
-                                                    data-item-name="{{ behavior.name }}"
-                                                    data-item-type="conducta">
-                                                    <i class="bi bi-trash3"></i>
-                                                </button>
+                                                {% if behavior.name|trim|lower != 'otra' %}
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-sm btn-outline-warning open-delete-modal"
+                                                        title="Eliminar conducta"
+                                                        aria-label="Eliminar conducta"
+                                                        data-delete-url="{{ url_for('admin.delete_behavior', behavior_id=behavior.id) }}"
+                                                        data-item-name="{{ behavior.name }}"
+                                                        data-item-type="conducta">
+                                                        <i class="bi bi-trash3"></i>
+                                                    </button>
+                                                {% else %}
+                                                    <span class="text-muted small"></span>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -86,16 +90,20 @@
                                         <tr>
                                             <td>{{ impact.name }}</td>
                                             <td>
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-sm btn-outline-warning open-delete-modal"
-                                                    title="Eliminar impacto"
-                                                    aria-label="Eliminar impacto"
-                                                    data-delete-url="{{ url_for('admin.delete_impact', impact_id=impact.id) }}"
-                                                    data-item-name="{{ impact.name }}"
-                                                    data-item-type="impacto">
-                                                    <i class="bi bi-trash3"></i>
-                                                </button>
+                                                {% if impact.name|trim|lower != 'otro' %}
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-sm btn-outline-warning open-delete-modal"
+                                                        title="Eliminar impacto"
+                                                        aria-label="Eliminar impacto"
+                                                        data-delete-url="{{ url_for('admin.delete_impact', impact_id=impact.id) }}"
+                                                        data-item-name="{{ impact.name }}"
+                                                        data-item-type="impacto">
+                                                        <i class="bi bi-trash3"></i>
+                                                    </button>
+                                                {% else %}
+                                                    <span class="text-muted small"></span>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}
