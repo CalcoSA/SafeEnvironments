@@ -323,3 +323,132 @@ class ReportService:
             "image/jpg",
         }
         return evidence.mime_type in previewable_mimes
+    
+    @staticmethod
+    def create_manual_report(form_data: dict, files: list, created_by_user_login: str = None):
+        try:
+            default_behavior_ids = [1]
+            default_impact_ids = [1]
+
+            if not BehaviorRepository.get_by_ids(default_behavior_ids):
+                raise Exception("No existe la conducta por defecto con id 1")
+
+            if not ImpactRepository.get_by_ids(default_impact_ids):
+                raise Exception("No existe el impacto por defecto con id 1")
+
+            reporter_data = {
+                "name": (form_data.get("reporter_full_name") or "").strip(),
+                "document": (form_data.get("reporter_document_number") or "").strip(),
+                "email": (form_data.get("reporter_email") or "").strip(),
+                "phone": (form_data.get("reporter_phone_number") or "").strip(),
+                "role": "reporter",
+                "area": (form_data.get("reporter_point_of_sale_area") or "").strip(),
+                "position": (form_data.get("reporter_current_position") or "").strip(),
+            }
+
+            required_reporter_fields = {
+                "Nombre del reportante": reporter_data["name"],
+                "Documento del reportante": reporter_data["document"],
+                "Correo del reportante": reporter_data["email"],
+                "Teléfono del reportante": reporter_data["phone"],
+                "CDS del reportante": reporter_data["area"],
+                "Cargo del reportante": reporter_data["position"],
+            }
+
+            for label, value in required_reporter_fields.items():
+                if not value:
+                    raise Exception(f"{label} es obligatorio")
+
+            reporter_success, reporter_message, reporter_user = UserRepository.create_or_update_by_document(reporter_data)
+
+            if not reporter_success:
+                raise Exception(reporter_message)
+
+            accused_name = (form_data.get("involved_person_name") or "").strip()
+            accused_position = (form_data.get("involved_person_position") or "").strip()
+            accused_area = (form_data.get("involved_person_point_of_sale") or "").strip()
+
+            if not accused_name:
+                raise Exception("El nombre de la persona involucrada es obligatorio")
+
+            if not accused_position:
+                raise Exception("El cargo de la persona involucrada es obligatorio")
+
+            if not accused_area:
+                raise Exception("El CDS de la persona involucrada es obligatorio")
+
+            accused_user = User.query.filter(
+                db.func.lower(User.name) == accused_name.lower()
+            ).first()
+
+            if accused_user:
+                accused_user = UserRepository.update(accused_user, {
+                    "name": accused_name,
+                    "position": accused_position or accused_user.position,
+                    "area": accused_area or accused_user.area,
+                })
+            else:
+                accused_user = UserRepository.create({
+                    "name": accused_name,
+                    "document": None,
+                    "email": None,
+                    "phone": None,
+                    "role": "reporter",
+                    "area": accused_area,
+                    "position": accused_position,
+                })
+
+            valid_files = [f for f in (files or []) if f and f.filename]
+
+            default_has_evidence = "si" if valid_files else "no"
+
+            report_data = {
+                "reporter_user_id": reporter_user.id,
+                "accused_user_id": accused_user.id,
+                "reporter_name": reporter_user.name,
+                "reporter_area": reporter_data["area"],
+                "reporter_position": reporter_data["position"],
+                "accused_name": accused_name,
+                "accused_area": accused_area,
+                "accused_position": accused_position,
+                "narrative": "Reporte cargado manualmente por gestor de casos.",
+                "accused_relation": "otro",
+                "accused_relation_other": "Registro manual por gestor de casos",
+                "frequency": "una_vez",
+                "has_evidence": default_has_evidence,
+                "current_risk": "no_segura",
+                "psychological_support": "mas_informacion",
+                "status": "nuevo",
+                "closed_at": None,
+            }
+
+            report = ReportRepository.create(report_data)
+
+            ReportHistoryRepository.create({
+                "report_id": report.id,
+                "status": "nuevo",
+                "comment": "Reporte creado manualmente por gestor de casos.",
+                "changed_by_user_login": created_by_user_login,
+            })
+
+            BehaviorRepository.link_behaviors(report.id, default_behavior_ids)
+            ImpactRepository.link_impacts(report.id, default_impact_ids)
+
+            if valid_files:
+                ReportService._save_evidences(report.id, valid_files)
+
+            db.session.commit()
+
+            try:
+                from app.services.reportNotificationService import ReportNotificationService
+                ReportNotificationService.send_report_created_notifications(report)
+            except Exception as mail_error:
+                current_app.logger.error(
+                    f"Error enviando notificaciones del reporte manual {report.id}: {mail_error}"
+                )
+
+            return report
+
+        except Exception:
+            db.session.rollback()
+            raise
