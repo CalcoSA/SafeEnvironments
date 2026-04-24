@@ -145,10 +145,11 @@ def create_manual_report():
             "reporter_current_position": request.form.get("reporter_current_position"),
             "reporter_email": request.form.get("reporter_email"),
             "reporter_phone_number": request.form.get("reporter_phone_number"),
-
             "involved_person_name": request.form.get("involved_person_name"),
             "involved_person_position": request.form.get("involved_person_position"),
             "involved_person_point_of_sale": request.form.get("involved_person_point_of_sale"),
+            "include_manual_narrative": request.form.get("include_manual_narrative"),
+            "manual_narrative": request.form.get("manual_narrative"),
         }
 
         created_by_user_login = session.get("intranet_user")

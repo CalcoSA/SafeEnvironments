@@ -144,10 +144,6 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                         </div>
                         <div class="modal-body">
-                            <div class="alert alert-light border mb-4">
-                                Este formulario crea un reporte manual con valores por defecto:
-                                conducta = ID 1, impacto = ID 1, estado = Nuevo.
-                            </div>
                             <div class="row g-3">
                                 <div class="col-12">
                                     <h5 class="fw-bold mb-2">Información de quien reporta</h5>
@@ -190,6 +186,28 @@
                                 <div class="col-md-6">
                                     <label for="manual_involved_person_point_of_sale" class="form-label fw-semibold">Punto de venta / CDS</label>
                                     <input type="text" class="form-control" id="manual_involved_person_point_of_sale" name="involved_person_point_of_sale" required>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <h5 class="fw-bold mb-2">Relato de los hechos</h5>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="manual_include_narrative" name="include_manual_narrative">
+                                        <label class="form-check-label fw-semibold" for="manual_include_narrative">
+                                            Deseo agregar relato de los hechos
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-12 d-none" id="manual_narrative_wrapper">
+                                    <label for="manual_narrative" class="form-label fw-semibold">
+                                        Describe lo sucedido
+                                    </label>
+                                    <textarea class="form-control" id="manual_narrative" name="manual_narrative" rows="6" maxlength="1000" placeholder="Escribe aquí el relato de los hechos...">
+                                    </textarea>
+                                    <div class="form-text">
+                                        Si no marcas la opción anterior, se guardará el texto por defecto.
+                                        <span id="manual_narrative_counter">0/1000</span>
+                                    </div>
                                 </div>
                                 <div class="col-12 mt-3">
                                     <h5 class="fw-bold mb-2">Documento(s) de prueba</h5>
@@ -613,7 +631,6 @@
         {% endif %}
     </div>
 </div>
-
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const numericFields = [
@@ -626,6 +643,35 @@
                 this.value = this.value.replace(/\D/g, "").slice(0, 11);
             });
         });
+        const includeNarrativeCheck = document.getElementById("manual_include_narrative");
+        const narrativeWrapper = document.getElementById("manual_narrative_wrapper");
+        const narrativeTextarea = document.getElementById("manual_narrative");
+        const narrativeCounter = document.getElementById("manual_narrative_counter");
+        function updateNarrativeCounter() {
+            if (!narrativeTextarea || !narrativeCounter) return;
+            narrativeCounter.textContent = `${narrativeTextarea.value.length}/1000`;
+        }
+        function toggleManualNarrative() {
+            if (!includeNarrativeCheck || !narrativeWrapper || !narrativeTextarea) return;
+
+            if (includeNarrativeCheck.checked) {
+                narrativeWrapper.classList.remove("d-none");
+                narrativeTextarea.required = true;
+                narrativeTextarea.focus();
+            } else {
+                narrativeWrapper.classList.add("d-none");
+                narrativeTextarea.required = false;
+                narrativeTextarea.value = "";
+            }
+            updateNarrativeCounter();
+        }
+        if (includeNarrativeCheck) {
+            includeNarrativeCheck.addEventListener("change", toggleManualNarrative);
+        }
+        if (narrativeTextarea) {
+            narrativeTextarea.addEventListener("input", updateNarrativeCounter);
+        }
+        toggleManualNarrative();
     });
 </script>
 {% endblock %}
