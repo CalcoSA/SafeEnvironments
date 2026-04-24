@@ -327,15 +327,6 @@ class ReportService:
     @staticmethod
     def create_manual_report(form_data: dict, files: list, created_by_user_login: str = None):
         try:
-            default_behavior_ids = [1]
-            default_impact_ids = [1]
-
-            if not BehaviorRepository.get_by_ids(default_behavior_ids):
-                raise Exception("No existe la conducta por defecto con id 1")
-
-            if not ImpactRepository.get_by_ids(default_impact_ids):
-                raise Exception("No existe el impacto por defecto con id 1")
-
             reporter_data = {
                 "name": (form_data.get("reporter_full_name") or "").strip(),
                 "document": (form_data.get("reporter_document_number") or "").strip(),
@@ -402,6 +393,16 @@ class ReportService:
 
             default_has_evidence = "si" if valid_files else "no"
 
+            include_manual_narrative = form_data.get("include_manual_narrative") == "on"
+            manual_narrative = (form_data.get("manual_narrative") or "").strip()
+
+            if include_manual_narrative:
+                if not manual_narrative:
+                    raise Exception("Debes ingresar el relato de los hechos")
+                narrative = manual_narrative
+            else:
+                narrative = "Reporte cargado manualmente por gestor de casos."
+
             report_data = {
                 "reporter_user_id": reporter_user.id,
                 "accused_user_id": accused_user.id,
@@ -411,13 +412,13 @@ class ReportService:
                 "accused_name": accused_name,
                 "accused_area": accused_area,
                 "accused_position": accused_position,
-                "narrative": "Reporte cargado manualmente por gestor de casos.",
-                "accused_relation": "otro",
-                "accused_relation_other": "Registro manual por gestor de casos",
-                "frequency": "una_vez",
+                "narrative": narrative,
+                "accused_relation": None,
+                "accused_relation_other": None,
+                "frequency": None,
+                "current_risk": None,
+                "psychological_support": None,
                 "has_evidence": default_has_evidence,
-                "current_risk": "no_segura",
-                "psychological_support": "mas_informacion",
                 "status": "nuevo",
                 "closed_at": None,
             }
@@ -430,9 +431,6 @@ class ReportService:
                 "comment": "Reporte creado manualmente por gestor de casos.",
                 "changed_by_user_login": created_by_user_login,
             })
-
-            BehaviorRepository.link_behaviors(report.id, default_behavior_ids)
-            ImpactRepository.link_impacts(report.id, default_impact_ids)
 
             if valid_files:
                 ReportService._save_evidences(report.id, valid_files)
