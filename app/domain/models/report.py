@@ -19,12 +19,12 @@ class Report(db.Model):
     closed_at = db.Column(db.DateTime, nullable=True)
     accused_relation = db.Column(
         db.Enum("jefe_directo", "companero", "persona_a_cargo", "proveedor", "cliente", "otro"),
-        nullable=False
+        nullable=True
     )
     accused_relation_other = db.Column(db.String(150), nullable=True)
     frequency = db.Column(
         db.Enum("una_vez", "mas_de_una_vez", "reiterada"),
-        nullable=False
+        nullable=True
     )
     has_evidence = db.Column(
         db.Enum("si", "no", "investigar_sin_pruebas"),
@@ -32,11 +32,11 @@ class Report(db.Model):
     )
     current_risk = db.Column(
         db.Enum("si", "no", "no_segura"),
-        nullable=False
+        nullable=True
     )
     psychological_support = db.Column(
         db.Enum("prioritario", "orientacion", "no", "mas_informacion"),
-        nullable=False
+        nullable=True
     )
     status = db.Column(
         db.Enum("nuevo", "en_proceso", "finalizado", "archivado"),
