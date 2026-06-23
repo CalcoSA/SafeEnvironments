@@ -245,55 +245,6 @@
                 });
             </script>
 
-            <!-- SECCIÓN 5 -->
-            <section class="mb-4">
-                <h2 class="h5 fw-bold mb-3">FRECUENCIA</h2>
-
-                <div class="mb-3">
-                    <label class="form-label d-block">La situación ocurrió:</label>
-
-                    <div class="form-check">
-                        <input
-                            class="form-check-input"
-                            type="radio"
-                            name="occurrence_frequency"
-                            id="occurrence_once"
-                            value="Una sola vez"
-                            required
-                        >
-                        <label class="form-check-label" for="occurrence_once">
-                            Una sola vez
-                        </label>
-                    </div>
-
-                    <div class="form-check">
-                        <input
-                            class="form-check-input"
-                            type="radio"
-                            name="occurrence_frequency"
-                            id="occurrence_more_than_once"
-                            value="Más de una vez"
-                        >
-                        <label class="form-check-label" for="occurrence_more_than_once">
-                            Más de una vez
-                        </label>
-                    </div>
-
-                    <div class="form-check">
-                        <input
-                            class="form-check-input"
-                            type="radio"
-                            name="occurrence_frequency"
-                            id="occurrence_repeated"
-                            value="De manera reiterada"
-                        >
-                        <label class="form-check-label" for="occurrence_repeated">
-                            De manera reiterada
-                        </label>
-                    </div>
-                </div>
-            </section>
-
             <!-- SECCIÓN 6 -->
             <section class="mb-4">
                 <h2 class="h5 fw-bold mb-3">PRUEBAS</h2>
@@ -569,11 +520,217 @@
             </section>
 
             <div class="d-flex justify-content-center">
-                <button type="submit" class="admin-access-btn">
+                <button type="submit" class="admin-access-btn" id="submitReportBtn">
                     Enviar reporte
                 </button>
             </div>
         </form>
     </div>
 </div>
+<!-- Overlay divertido de carga al enviar reporte -->
+<div id="submitLoadingOverlay" class="submit-loading-overlay d-none" aria-hidden="true">
+    <div class="submit-loading-card" role="status" aria-live="polite">
+        <div class="happy-loader" aria-hidden="true">
+            <span class="happy-eye happy-eye-left"></span>
+            <span class="happy-eye happy-eye-right"></span>
+            <span class="happy-smile"></span>
+        </div>
+
+        <h3 class="submit-loading-title">Estamos enviando tu reporte</h3>
+        <p class="submit-loading-text">
+            Un momento, estamos guardando la información y notificando al equipo.
+        </p>
+
+        <div class="submit-loading-dots" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .submit-loading-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 254, 249, 0.88);
+        backdrop-filter: blur(4px);
+    }
+
+    .submit-loading-card {
+        width: min(90%, 420px);
+        padding: 32px 28px;
+        border-radius: 24px;
+        background: #FFFEF9;
+        border: 2px solid #513629;
+        box-shadow: 0 18px 45px rgba(81, 54, 41, 0.18);
+        text-align: center;
+        animation: loadingCardEnter 0.25s ease-out;
+    }
+
+    .happy-loader {
+        position: relative;
+        width: 92px;
+        height: 92px;
+        margin: 0 auto 18px;
+        border-radius: 50%;
+        background: #FFD966;
+        border: 4px solid #513629;
+        animation: happyBounce 1.15s ease-in-out infinite;
+    }
+
+    .happy-eye {
+        position: absolute;
+        top: 30px;
+        width: 12px;
+        height: 16px;
+        border-radius: 50%;
+        background: #513629;
+    }
+
+    .happy-eye-left {
+        left: 25px;
+    }
+
+    .happy-eye-right {
+        right: 25px;
+        animation: happyWink 1.8s ease-in-out infinite;
+        transform-origin: center;
+    }
+
+    .happy-smile {
+        position: absolute;
+        left: 50%;
+        bottom: 22px;
+        width: 38px;
+        height: 20px;
+        border-bottom: 5px solid #513629;
+        border-radius: 0 0 38px 38px;
+        transform: translateX(-50%);
+    }
+
+    .submit-loading-title {
+        margin: 0 0 8px;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #513629;
+    }
+
+    .submit-loading-text {
+        margin: 0;
+        color: #513629;
+        font-size: 0.98rem;
+        line-height: 1.45;
+    }
+
+    .submit-loading-dots {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 18px;
+    }
+
+    .submit-loading-dots span {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #513629;
+        animation: loadingDot 1s ease-in-out infinite;
+    }
+
+    .submit-loading-dots span:nth-child(2) {
+        animation-delay: 0.15s;
+    }
+
+    .submit-loading-dots span:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+
+    @keyframes happyBounce {
+        0%, 100% {
+            transform: translateY(0) rotate(0deg);
+        }
+        35% {
+            transform: translateY(-8px) rotate(-4deg);
+        }
+        70% {
+            transform: translateY(2px) rotate(4deg);
+        }
+    }
+
+    @keyframes happyWink {
+        0%, 72%, 100% {
+            height: 16px;
+            border-radius: 50%;
+        }
+        78%, 86% {
+            height: 4px;
+            border-radius: 10px;
+            transform: translateY(6px);
+        }
+    }
+
+    @keyframes loadingDot {
+        0%, 100% {
+            transform: translateY(0);
+            opacity: 0.5;
+        }
+        50% {
+            transform: translateY(-6px);
+            opacity: 1;
+        }
+    }
+
+    @keyframes loadingCardEnter {
+        from {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.querySelector(".report-form");
+        const overlay = document.getElementById("submitLoadingOverlay");
+        const submitButton = document.getElementById("submitReportBtn");
+
+        if (!form || !overlay) return;
+
+        form.addEventListener("submit", function (event) {
+            /*
+                Importante:
+                Tus validaciones de conductas e impactos también escuchan el submit.
+                Si alguna validación ya bloqueó el envío, no mostramos el loader.
+            */
+            setTimeout(function () {
+                if (event.defaultPrevented) return;
+
+                const behaviorCheckboxes = document.querySelectorAll(".behavior-checkbox");
+                const impactCheckboxes = document.querySelectorAll(".impact-checkbox");
+
+                const hasBehavior = Array.from(behaviorCheckboxes).some(checkbox => checkbox.checked);
+                const hasImpact = Array.from(impactCheckboxes).some(checkbox => checkbox.checked);
+
+                if (!form.checkValidity() || !hasBehavior || !hasImpact) return;
+
+                overlay.classList.remove("d-none");
+                overlay.setAttribute("aria-hidden", "false");
+
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = "Enviando...";
+                }
+            }, 0);
+        });
+    });
+</script>
 {% endblock %}

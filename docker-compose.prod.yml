@@ -1,0 +1,15 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: safeenvironments_prod
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8010:8000"
+    volumes:
+      - ./generated_pdfs:/app/generated_pdfs
+      - ./private_storage:/app/private_storage
+    command: gunicorn --workers 3 --bind 0.0.0.0:8000 "app:create_app('production')"
