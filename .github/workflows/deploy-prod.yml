@@ -71,8 +71,9 @@ jobs:
           ssh -p "${GCP_SSH_PORT:-22}" "$GCP_USER@$GCP_HOST" "
             cd /opt/apps/safeenvironments/prod &&
             mkdir -p generated_pdfs private_storage &&
-            docker compose -f docker-compose.prod.yml down &&
-            docker compose -f docker-compose.prod.yml up -d --build &&
-            docker compose -f docker-compose.prod.yml exec -T web flask --app \"app:create_app('production')\" db upgrade &&
+            docker-compose -f docker-compose.prod.yml down &&
+            docker-compose -f docker-compose.prod.yml build &&
+            docker-compose -f docker-compose.prod.yml run --rm web flask --app \"app:create_app('production')\" db upgrade &&
+            docker-compose -f docker-compose.prod.yml up -d &&
             docker image prune -f
           "
