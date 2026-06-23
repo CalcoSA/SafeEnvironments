@@ -74,9 +74,6 @@ class ReportService:
 
             normalized_frequency = ReportService.FREQUENCY_MAP.get(form_data.get("occurrence_frequency"))
 
-            if not normalized_frequency:
-                raise Exception("La frecuencia seleccionada no es válida")
-
             normalized_has_evidence = ReportService.EVIDENCE_MAP.get(form_data.get("has_evidence"))
 
             if not normalized_has_evidence:

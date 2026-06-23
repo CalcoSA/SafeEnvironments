@@ -1,0 +1,79 @@
+name: Deploy SafeEnvironments QA
+
+on:
+  push:
+    branches:
+      - qa
+  workflow_dispatch:
+
+jobs:
+  deploy-qa:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Crear archivo .env QA
+        env:
+          ENV_QA: ${{ secrets.ENV_QA }}
+        run: |
+          printf '%s' "$ENV_QA" > .env.deploy
+
+      - name: Configurar SSH
+        env:
+          SSH_KEY: ${{ secrets.GCP_SSH_KEY }}
+          GCP_HOST: ${{ secrets.GCP_HOST }}
+          GCP_SSH_PORT: ${{ secrets.GCP_SSH_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p "${GCP_SSH_PORT:-22}" "$GCP_HOST" >> ~/.ssh/known_hosts
+
+      - name: Crear carpeta QA en servidor
+        env:
+          GCP_HOST: ${{ secrets.GCP_HOST }}
+          GCP_USER: ${{ secrets.GCP_USER }}
+          GCP_SSH_PORT: ${{ secrets.GCP_SSH_PORT }}
+        run: |
+          ssh -p "${GCP_SSH_PORT:-22}" "$GCP_USER@$GCP_HOST" "
+            mkdir -p /opt/apps/safeenvironments/qa
+          "
+
+      - name: Subir código QA
+        env:
+          GCP_HOST: ${{ secrets.GCP_HOST }}
+          GCP_USER: ${{ secrets.GCP_USER }}
+          GCP_SSH_PORT: ${{ secrets.GCP_SSH_PORT }}
+        run: |
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.venv' \
+            --exclude 'venv' \
+            --exclude '__pycache__' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            --exclude 'generated_pdfs' \
+            --exclude 'private_storage' \
+            -e "ssh -p ${GCP_SSH_PORT:-22}" \
+            ./ "$GCP_USER@$GCP_HOST:/opt/apps/safeenvironments/qa/"
+
+          scp -P "${GCP_SSH_PORT:-22}" .env.deploy "$GCP_USER@$GCP_HOST:/opt/apps/safeenvironments/qa/.env"
+
+      - name: Desplegar QA con Docker Compose
+        env:
+          GCP_HOST: ${{ secrets.GCP_HOST }}
+          GCP_USER: ${{ secrets.GCP_USER }}
+          GCP_SSH_PORT: ${{ secrets.GCP_SSH_PORT }}
+        run: |
+          ssh -p "${GCP_SSH_PORT:-22}" "$GCP_USER@$GCP_HOST" "
+            cd /opt/apps/safeenvironments/qa &&
+            mkdir -p generated_pdfs private_storage &&
+            docker-compose -f docker-compose.qa.yml down &&
+            docker-compose -f docker-compose.qa.yml build &&
+            docker-compose -f docker-compose.qa.yml run --rm web flask --app \"app:create_app('qa')\" db upgrade &&
+            docker-compose -f docker-compose.qa.yml up -d &&
+            docker image prune -f
+          "
